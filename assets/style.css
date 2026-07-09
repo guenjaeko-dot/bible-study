@@ -193,3 +193,28 @@ a { color: var(--accent); }
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+
+.testament-group {
+  margin-top: 1rem;
+}
+
+.testament-heading {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.3rem;
+  margin: 2rem 0 0.75rem;
+}
+
+.book-group {
+  margin: 1.25rem 0;
+}
+
+.book-heading {
+  font-size: 1.05rem;
+  color: var(--accent);
+  margin: 0 0 0.5rem;
+}
