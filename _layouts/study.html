@@ -1,0 +1,20 @@
+---
+layout: default
+---
+<article class="study">
+  <div class="study-meta">
+    {% if page.testament %}<span class="badge">{{ page.testament }}</span>{% endif %}
+    {% if page.book %}<span class="book">{{ page.book }}</span>{% endif %}
+    {% if page.reference %}<span class="reference">{{ page.reference }}</span>{% endif %}
+  </div>
+  <h1>{{ page.title }}</h1>
+  {% if page.tags and page.tags.size > 0 %}
+  <ul class="tags">
+    {% for tag in page.tags %}<li>{{ tag }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  <div class="study-body">
+    {{ content }}
+  </div>
+  <p class="back-link"><a href="{{ '/' | relative_url }}">&larr; 목록으로</a></p>
+</article>

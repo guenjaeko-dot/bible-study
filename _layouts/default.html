@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}</title>
+<meta name="description" content="{{ site.description }}">
+<link rel="stylesheet" href="{{ '/assets/style.css' | relative_url }}">
+</head>
+<body>
+<header class="site-header">
+  <a class="site-title" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+  <p class="site-desc">{{ site.description }}</p>
+</header>
+<main>
+{{ content }}
+</main>
+<footer class="site-footer">
+  <p><a href="{{ '/about/' | relative_url }}">이 사이트에 대하여</a></p>
+</footer>
+</body>
+</html>
