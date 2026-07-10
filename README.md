@@ -42,3 +42,4 @@ bundle exec jekyll serve
 ## 배포 주소
 
 https://guenjaeko-dot.github.io/bible-study/
+
