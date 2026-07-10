@@ -2,6 +2,8 @@
 layout: default
 ---
 
+<p style="margin: 0.5rem 0 0;"><a href="/bible-study/generate/">+ 새 구절 직접 생성하기 (Anthropic API 키 필요)</a></p>
+
 <div class="controls">
   <input type="text" id="search" placeholder="구절, 책 이름, 키워드로 검색 (예: 요나, 섭리, 롬8)" autocomplete="off">
 </div>

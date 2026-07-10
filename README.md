@@ -22,6 +22,13 @@ GitHub Pages(Jekyll 기본 빌드, 별도 설치/빌드 도구 불필요)로 배
 해당 구절의 연구 파일(`_studies/<책이름>/...`)을 자동으로 찾아 근거로 삼아 설교 대지·적용 등을 생성한다.
 설교 인사이트 자체는 이 사이트에 게시하지 않는 개인 작업 자료로 다룬다.
 
+## 브라우저에서 직접 생성
+
+`/generate/` 페이지에서 본인의 Anthropic API 키를 입력하면 Claude Code 없이도 브라우저에서 바로
+연구를 생성하고 GitHub에 저장할 수 있다. 호출마다 본인의 Anthropic 계정에 과금되며, 키는 그 브라우저의
+localStorage에만 저장되고 Anthropic API 서버 외에는 전송되지 않는다. GitHub 저장을 쓰려면 `_studies`
+경로에 쓰기 권한이 있는 Personal Access Token이 필요하다.
+
 ## 로컬 미리보기 (선택)
 
 Ruby와 Jekyll이 설치되어 있다면:

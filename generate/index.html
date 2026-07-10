@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>연구 생성 · 개혁주의 성경연구</title>
+<link rel="stylesheet" href="/bible-study/assets/style.css">
+<style>
+  .panel { border: 1px solid var(--border); border-radius: 10px; background: var(--card-bg); padding: 1rem 1.1rem; margin-bottom: 1.25rem; }
+  .panel h2 { margin-top: 0; font-size: 1.05rem; }
+  .field { margin-bottom: 0.75rem; }
+  .field label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 0.5rem 0.7rem; font-family: inherit; font-size: 0.95rem;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); box-sizing: border-box;
+  }
+  .row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .row .field { flex: 1; min-width: 140px; }
+  button { font-family: inherit; font-size: 0.95rem; padding: 0.55rem 1rem; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
+  button.secondary { background: transparent; color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .warn { color: var(--accent); font-size: 0.85rem; }
+  #output { white-space: normal; }
+  #output h2 { font-size: 1.1rem; margin-top: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+  #output h3 { font-size: 1rem; margin-top: 1.2rem; }
+  #output ul, #output ol { padding-left: 1.3rem; }
+  #status { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <a class="site-title" href="/bible-study/">개혁주의 성경연구</a>
+  <p class="site-desc">개혁주의(Reformed) 신학 관점의 성경 연구 아카이브</p>
+</header>
+<main>
+
+<p><a href="/bible-study/">&larr; 목록으로</a></p>
+<h1>구절 연구 생성</h1>
+<p class="warn">
+  이 페이지는 브라우저에서 사용자의 Anthropic API 키로 <strong>직접</strong> Claude API를 호출합니다.
+  호출마다 사용자 본인의 Anthropic 계정에 실제로 과금됩니다. 키는 이 브라우저의 로컬 저장소에만
+  보관되며, Anthropic API 서버 외에는 어디로도 전송되지 않습니다.
+</p>
+
+<div class="panel">
+  <h2>설정 (이 브라우저에만 저장됨)</h2>
+  <div class="field">
+    <label for="apiKey">Anthropic API 키 (sk-ant-...)</label>
+    <input type="password" id="apiKey" placeholder="sk-ant-api03-...">
+  </div>
+  <div class="row">
+    <div class="field">
+      <label for="model">모델</label>
+      <select id="model">
+        <option value="claude-sonnet-5">Claude Sonnet 5 (빠름/저렴, 추천)</option>
+        <option value="claude-opus-4-8">Claude Opus 4.8 (고급/고가)</option>
+      </select>
+    </div>
+  </div>
+  <details>
+    <summary>GitHub에 저장하려면 (선택)</summary>
+    <div class="row" style="margin-top:0.75rem;">
+      <div class="field">
+        <label for="ghToken">GitHub Personal Access Token</label>
+        <input type="password" id="ghToken" placeholder="ghp_... (repo contents 쓰기 권한)">
+      </div>
+      <div class="field">
+        <label for="ghRepo">저장소 (owner/repo)</label>
+        <input type="text" id="ghRepo" value="guenjaeko-dot/bible-study">
+      </div>
+    </div>
+  </details>
+  <button id="saveSettings">설정 저장</button>
+  <button id="clearSettings" class="secondary">설정 지우기</button>
+</div>
+
+<div class="panel">
+  <h2>연구할 구절</h2>
+  <div class="row">
+    <div class="field">
+      <label for="book">책 이름</label>
+      <input type="text" id="book" placeholder="예: 요나">
+    </div>
+    <div class="field">
+      <label for="testament">구약/신약</label>
+      <select id="testament">
+        <option value="구약">구약</option>
+        <option value="신약">신약</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="verseRange">장절</label>
+      <input type="text" id="verseRange" placeholder="예: 1:4-10">
+    </div>
+  </div>
+  <button id="generateBtn">연구 생성</button>
+  <span id="status"></span>
+</div>
+
+<div class="panel" id="outputPanel" style="display:none;">
+  <h2>생성된 연구</h2>
+  <div id="output"></div>
+</div>
+
+<div class="panel" id="savePanel" style="display:none;">
+  <h2>사이트에 저장</h2>
+  <div class="field">
+    <label for="title">제목</label>
+    <input type="text" id="title" placeholder="예: 다시스로 도망한 선지자와 이방 선원들의 두려움">
+  </div>
+  <div class="field">
+    <label for="tags">태그 (쉼표로 구분)</label>
+    <input type="text" id="tags" placeholder="예: 섭리, 일반은총, 죄론">
+  </div>
+  <button id="saveGithubBtn">GitHub에 저장</button>
+  <span id="saveStatus"></span>
+</div>
+
+</main>
+<footer class="site-footer">
+  <p><a href="/bible-study/about/">이 사이트에 대하여</a></p>
+</footer>
+
+<script>
+(function () {
+  var SYSTEM_PROMPT = [
+    "당신은 개혁주의(Reformed) 신학 전통에 선 성경 연구 조교입니다. 특정 교단에 국한하지 않고",
+    "웨스트민스터 표준문서, 삼대 일치 신조(하이델베르크 요리문답, 벨직 신앙고백, 도르트 신조),",
+    "5대 솔라, 언약신학을 아우르는 개혁주의 전통 전반을 기준으로 삼습니다.",
+    "",
+    "주어지는 성경 구절에 대해 아래 형식으로, 마크다운으로 답하십시오.",
+    "서두나 맺음말 문장 없이 바로 \"## 원어 확인\"부터 시작하십시오.",
+    "",
+    "## 원어 확인",
+    "헬라어/히브리어 핵심 단어, 형태론, 한글 역본과의 뉘앙스 차이. 확신이 없으면 web_search로",
+    "원어 사전(Strong's, BDAG, HALOT 계열)을 확인하십시오.",
+    "",
+    "## 문맥 분석",
+    "저자, 연대, 수신자, 본문이 속한 단락에서의 위치. 문법적-역사적 해석과 구속사적 읽기.",
+    "",
+    "## 개혁주의 주석가 관점",
+    "칼빈, 매튜 헨리 등 최소 2인의 관점을 대조하십시오. 필요하면 web_search로 인용의 정확성을",
+    "확인하고, 확인 못한 인용은 인용부호 없이 조심스럽게 표현하십시오. 가능하면 각국(미국, 한국,",
+    "네덜란드 등) 복음주의·개혁주의 신학대학원의 공개 자료도 검색해 출처(기관·저자·링크)를 밝히고",
+    "반영하되, 찾지 못하면 억지로 끼워 넣지 마십시오.",
+    "",
+    "## 조직신학적 함의",
+    "관련 조직신학 주제, 5대 솔라·언약신학과의 연결, 관련 신앙고백서 조항(확실할 때만 조항 번호 명시).",
+    "",
+    "## 적용점",
+    "본문에서 직접 도출되는 구체적 적용 2~4개.",
+    "",
+    "## 참고자료",
+    "실제로 검색해 확인한 링크만 마크다운 링크로 나열하십시오. 확인하지 못한 사실은 단정하지 마십시오."
+  ].join("\n");
+
+  function $(id) { return document.getElementById(id); }
+
+  function loadSettings() {
+    $("apiKey").value = localStorage.getItem("bs_apiKey") || "";
+    $("model").value = localStorage.getItem("bs_model") || "claude-sonnet-5";
+    $("ghToken").value = localStorage.getItem("bs_ghToken") || "";
+    $("ghRepo").value = localStorage.getItem("bs_ghRepo") || "guenjaeko-dot/bible-study";
+  }
+  function saveSettings() {
+    localStorage.setItem("bs_apiKey", $("apiKey").value.trim());
+    localStorage.setItem("bs_model", $("model").value);
+    localStorage.setItem("bs_ghToken", $("ghToken").value.trim());
+    localStorage.setItem("bs_ghRepo", $("ghRepo").value.trim());
+    $("status").textContent = "설정을 저장했습니다.";
+  }
+  function clearSettings() {
+    localStorage.removeItem("bs_apiKey");
+    localStorage.removeItem("bs_model");
+    localStorage.removeItem("bs_ghToken");
+    localStorage.removeItem("bs_ghRepo");
+    loadSettings();
+    $("status").textContent = "설정을 지웠습니다.";
+  }
+
+  function utf8ToBase64(str) {
+    var bytes = new TextEncoder().encode(str);
+    var binary = "";
+    for (var i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+
+  function renderMarkdown(md) {
+    var lines = md.split("\n");
+    var html = "";
+    var inList = false;
+    function closeList() {
+      if (inList) { html += "</ul>"; inList = false; }
+    }
+    function inlineFmt(text) {
+      text = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      text = text.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      return text;
+    }
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      if (/^### /.test(line)) { closeList(); html += "<h3>" + inlineFmt(line.slice(4)) + "</h3>"; }
+      else if (/^## /.test(line)) { closeList(); html += "<h2>" + inlineFmt(line.slice(3)) + "</h2>"; }
+      else if (/^[-*] /.test(line)) {
+        if (!inList) { html += "<ul>"; inList = true; }
+        html += "<li>" + inlineFmt(line.slice(2)) + "</li>";
+      } else if (/^\s*$/.test(line)) {
+        closeList();
+      } else {
+        closeList();
+        html += "<p>" + inlineFmt(line) + "</p>";
+      }
+    }
+    closeList();
+    return html;
+  }
+
+  var lastGeneratedMarkdown = "";
+
+  async function generate() {
+    var apiKey = $("apiKey").value.trim();
+    var book = $("book").value.trim();
+    var testament = $("testament").value;
+    var verseRange = $("verseRange").value.trim();
+    var model = $("model").value;
+
+    if (!apiKey) { $("status").textContent = "먼저 Anthropic API 키를 입력하고 저장하세요."; return; }
+    if (!book || !verseRange) { $("status").textContent = "책 이름과 장절을 입력하세요."; return; }
+
+    var reference = book + " " + verseRange;
+    $("generateBtn").disabled = true;
+    $("status").textContent = "생성 중... (시간이 걸릴 수 있습니다)";
+    $("outputPanel").style.display = "block";
+    $("output").innerHTML = "";
+    lastGeneratedMarkdown = "";
+
+    try {
+      var resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: model,
+          max_tokens: 8000,
+          stream: true,
+          system: SYSTEM_PROMPT,
+          tools: [{ type: "web_search_20260209", name: "web_search" }],
+          messages: [{ role: "user", content: reference + " 구절을 연구해줘." }]
+        })
+      });
+
+      if (!resp.ok || !resp.body) {
+        var errText = await resp.text();
+        throw new Error("API 오류 (" + resp.status + "): " + errText);
+      }
+
+      var reader = resp.body.getReader();
+      var decoder = new TextDecoder();
+      var buffer = "";
+      var fullText = "";
+
+      while (true) {
+        var chunk = await reader.read();
+        if (chunk.done) break;
+        buffer += decoder.decode(chunk.value, { stream: true });
+        var parts = buffer.split("\n\n");
+        buffer = parts.pop();
+        for (var p = 0; p < parts.length; p++) {
+          var block = parts[p];
+          var dataLine = null;
+          var blockLines = block.split("\n");
+          for (var l = 0; l < blockLines.length; l++) {
+            if (blockLines[l].indexOf("data:") === 0) {
+              dataLine = blockLines[l].slice(5).trim();
+            }
+          }
+          if (!dataLine) continue;
+          var evt;
+          try { evt = JSON.parse(dataLine); } catch (e) { continue; }
+          if (evt.type === "content_block_delta" && evt.delta && evt.delta.type === "text_delta") {
+            fullText += evt.delta.text;
+            lastGeneratedMarkdown = fullText;
+            $("output").innerHTML = renderMarkdown(fullText);
+          }
+        }
+      }
+
+      $("status").textContent = "생성 완료.";
+      $("savePanel").style.display = fullText ? "block" : "none";
+    } catch (err) {
+      $("status").textContent = "오류: " + err.message;
+    } finally {
+      $("generateBtn").disabled = false;
+    }
+  }
+
+  async function saveToGithub() {
+    var token = $("ghToken").value.trim();
+    var repo = $("ghRepo").value.trim();
+    var book = $("book").value.trim();
+    var testament = $("testament").value;
+    var verseRange = $("verseRange").value.trim();
+    var title = $("title").value.trim();
+    var tagsRaw = $("tags").value.trim();
+
+    if (!token) { $("saveStatus").textContent = "GitHub 토큰을 입력하세요."; return; }
+    if (!lastGeneratedMarkdown) { $("saveStatus").textContent = "먼저 연구를 생성하세요."; return; }
+    if (!title) { $("saveStatus").textContent = "제목을 입력하세요."; return; }
+
+    var slug = verseRange.replace(/:/g, "-").replace(/\s+/g, "");
+    var path = "_studies/" + encodeURIComponent(book) + "/" + encodeURIComponent(slug) + ".md";
+    var tags = tagsRaw ? tagsRaw.split(",").map(function (t) { return t.trim(); }).filter(Boolean) : [];
+    var tagsYaml = tags.length ? "[" + tags.join(", ") + "]" : "[]";
+    var today = new Date().toISOString().slice(0, 10);
+    var reference = book + " " + verseRange;
+
+    var frontMatter = [
+      "---",
+      'title: "' + title.replace(/"/g, '\\"') + '"',
+      "book: " + book,
+      "testament: " + testament,
+      'reference: "' + reference.replace(/"/g, '\\"') + '"',
+      "date: " + today,
+      "tags: " + tagsYaml,
+      "---",
+      "",
+      lastGeneratedMarkdown
+    ].join("\n");
+
+    $("saveStatus").textContent = "저장 중...";
+    try {
+      var apiUrl = "https://api.github.com/repos/" + repo + "/contents/" + path;
+      var sha = null;
+      var getResp = await fetch(apiUrl, {
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Accept": "application/vnd.github+json"
+        }
+      });
+      if (getResp.status === 200) {
+        var existing = await getResp.json();
+        sha = existing.sha;
+      }
+
+      var putBody = {
+        message: "Add study: " + reference,
+        content: utf8ToBase64(frontMatter),
+        branch: "main"
+      };
+      if (sha) { putBody.sha = sha; }
+
+      var putResp = await fetch(apiUrl, {
+        method: "PUT",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Accept": "application/vnd.github+json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(putBody)
+      });
+
+      if (!putResp.ok) {
+        var errText = await putResp.text();
+        throw new Error("GitHub 오류 (" + putResp.status + "): " + errText);
+      }
+
+      $("saveStatus").textContent = "저장 완료. 몇 분 내로 사이트에 반영됩니다.";
+    } catch (err) {
+      $("saveStatus").textContent = "오류: " + err.message;
+    }
+  }
+
+  $("saveSettings").addEventListener("click", saveSettings);
+  $("clearSettings").addEventListener("click", clearSettings);
+  $("generateBtn").addEventListener("click", generate);
+  $("saveGithubBtn").addEventListener("click", saveToGithub);
+
+  loadSettings();
+})();
+</script>
+</body>
+</html>
