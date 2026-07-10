@@ -279,6 +279,15 @@
     return html;
   }
 
+  // Claude sometimes emits short narration text blocks between web_search
+  // tool calls (e.g. "Good, I have X. Now let me check Y."). Our format always
+  // starts with a "## " heading, so drop anything before the first heading.
+  function stripPreamble(text) {
+    var idx = text.search(/##\s/);
+    if (idx === -1) return "";
+    return text.slice(idx);
+  }
+
   function getApiKey() {
     return $("apiKey").value.trim().replace(/[^\x21-\x7E]/g, "");
   }
@@ -376,10 +385,11 @@
         reference + " 구절을 연구해줘.",
         true,
         function (accumulated) {
-          lastGeneratedMarkdown = accumulated;
-          $("output").innerHTML = renderMarkdown(accumulated);
+          lastGeneratedMarkdown = stripPreamble(accumulated);
+          $("output").innerHTML = renderMarkdown(lastGeneratedMarkdown);
         }
       );
+      lastGeneratedMarkdown = stripPreamble(fullText);
       $("status").textContent = "생성 완료.";
       $("savePanel").style.display = fullText ? "block" : "none";
       $("sermonPanel").style.display = fullText ? "block" : "none";
@@ -410,8 +420,8 @@
         userContent,
         false,
         function (accumulated) {
-          lastSermonMarkdown = accumulated;
-          $("sermonOutput").innerHTML = renderMarkdown(accumulated);
+          lastSermonMarkdown = stripPreamble(accumulated);
+          $("sermonOutput").innerHTML = renderMarkdown(lastSermonMarkdown);
         }
       );
       $("sermonStatus").textContent = "생성 완료.";
