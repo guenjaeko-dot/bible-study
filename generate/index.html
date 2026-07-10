@@ -20,11 +20,12 @@
   button.secondary { background: transparent; color: var(--accent); }
   button:disabled { opacity: 0.5; cursor: default; }
   .warn { color: var(--accent); font-size: 0.85rem; }
-  #output { white-space: normal; }
-  #output h2 { font-size: 1.1rem; margin-top: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
-  #output h3 { font-size: 1rem; margin-top: 1.2rem; }
-  #output ul, #output ol { padding-left: 1.3rem; }
-  #status { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
+  .note { color: var(--muted); font-size: 0.85rem; }
+  .prose { white-space: normal; }
+  .prose h2 { font-size: 1.1rem; margin-top: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
+  .prose h3 { font-size: 1rem; margin-top: 1.2rem; }
+  .prose ul, .prose ol { padding-left: 1.3rem; }
+  .status-line { font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
   details summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
 </style>
 </head>
@@ -95,16 +96,30 @@
     </div>
   </div>
   <button id="generateBtn">연구 생성</button>
-  <span id="status"></span>
+  <span id="status" class="status-line"></span>
 </div>
 
 <div class="panel" id="outputPanel" style="display:none;">
   <h2>생성된 연구</h2>
-  <div id="output"></div>
+  <div id="output" class="prose"></div>
+</div>
+
+<div class="panel" id="sermonPanel" style="display:none;">
+  <h2>설교 인사이트</h2>
+  <p class="note">
+    위 연구를 근거로, 브라이언 채플·그레엄 골즈워디·에드먼드 클라우니의 그리스도 중심적 강해설교
+    전통에 따라 타락된 상태 초점·중심 메시지·설교 대지·청중별 적용을 생성합니다. 완성된 설교문이
+    아니라 설교자가 발전시킬 인사이트입니다.
+  </p>
+  <button id="sermonBtn">설교 인사이트 생성</button>
+  <button id="downloadSermonBtn" class="secondary" style="display:none;">.md로 다운로드</button>
+  <span id="sermonStatus" class="status-line"></span>
+  <div id="sermonOutput" class="prose" style="margin-top:0.75rem;"></div>
 </div>
 
 <div class="panel" id="savePanel" style="display:none;">
-  <h2>사이트에 저장</h2>
+  <h2>사이트에 저장 (연구만)</h2>
+  <p class="note">설교 인사이트는 개인 작업 자료로 다루며 이 저장 기능에는 포함되지 않습니다.</p>
   <div class="field">
     <label for="title">제목</label>
     <input type="text" id="title" placeholder="예: 다시스로 도망한 선지자와 이방 선원들의 두려움">
@@ -114,7 +129,7 @@
     <input type="text" id="tags" placeholder="예: 섭리, 일반은총, 죄론">
   </div>
   <button id="saveGithubBtn">GitHub에 저장</button>
-  <span id="saveStatus"></span>
+  <span id="saveStatus" class="status-line"></span>
 </div>
 
 </main>
@@ -124,10 +139,16 @@
 
 <script>
 (function () {
-  var SYSTEM_PROMPT = [
+  var RESEARCH_SYSTEM_PROMPT = [
     "당신은 개혁주의(Reformed) 신학 전통에 선 성경 연구 조교입니다. 특정 교단에 국한하지 않고",
     "웨스트민스터 표준문서, 삼대 일치 신조(하이델베르크 요리문답, 벨직 신앙고백, 도르트 신조),",
     "5대 솔라, 언약신학을 아우르는 개혁주의 전통 전반을 기준으로 삼습니다.",
+    "",
+    "모든 본문은 그리스도 중심적·구속사적 해석(게할더스 보스, 에드먼드 클라우니, 그레엄 골즈워디의",
+    "성경신학 전통)을 따라 읽으십시오. 본문이 궁극적으로 그리스도의 인격과 사역을 어떻게 예표·예언·",
+    "조명하는지, 혹은 그리스도 없이는 본문의 요구를 감당할 수 없는 지점이 어디인지 항상 살피고,",
+    "'본받으라' 식의 도덕주의적 교훈으로 환원하지 마십시오. 본문에 등장하는 인물이 아니라 하나님/",
+    "그리스도가 이야기의 주인공이 되게 하십시오.",
     "",
     "주어지는 성경 구절에 대해 아래 형식으로, 마크다운으로 답하십시오.",
     "서두나 맺음말 문장 없이 바로 \"## 원어 확인\"부터 시작하십시오.",
@@ -137,7 +158,8 @@
     "원어 사전(Strong's, BDAG, HALOT 계열)을 확인하십시오.",
     "",
     "## 문맥 분석",
-    "저자, 연대, 수신자, 본문이 속한 단락에서의 위치. 문법적-역사적 해석과 구속사적 읽기.",
+    "저자, 연대, 수신자, 본문이 속한 단락에서의 위치. 문법적-역사적 해석과 구속사적 읽기를 적용하고,",
+    "이 본문이 성경 전체의 그리스도 중심적 줄거리(창조-타락-구속-완성) 속 어디에 위치하는지 밝히십시오.",
     "",
     "## 개혁주의 주석가 관점",
     "칼빈, 매튜 헨리 등 최소 2인의 관점을 대조하십시오. 필요하면 web_search로 인용의 정확성을",
@@ -147,12 +169,50 @@
     "",
     "## 조직신학적 함의",
     "관련 조직신학 주제, 5대 솔라·언약신학과의 연결, 관련 신앙고백서 조항(확실할 때만 조항 번호 명시).",
+    "이 본문이 그리스도와 어떻게 연결되는지(예표, 성취, 대조 등)를 반드시 포함하십시오.",
     "",
     "## 적용점",
-    "본문에서 직접 도출되는 구체적 적용 2~4개.",
+    "본문에서 직접 도출되는 구체적 적용 2~4개. 그리스도 안에서 주어지는 은혜에 근거한 적용이 되도록",
+    "하고, 인간의 의지력만으로 실천하라는 식의 적용으로 끝나지 않도록 하십시오.",
     "",
     "## 참고자료",
     "실제로 검색해 확인한 링크만 마크다운 링크로 나열하십시오. 확인하지 못한 사실은 단정하지 마십시오."
+  ].join("\n");
+
+  var SERMON_SYSTEM_PROMPT = [
+    "당신은 브라이언 채플(Bryan Chapell), 그레엄 골즈워디(Graeme Goldsworthy), 에드먼드 클라우니",
+    "(Edmund Clowney)의 그리스도 중심적·구속사적 강해설교 전통에 선 개혁주의 설교 준비 조교입니다.",
+    "사용자가 제공하는 '이미 완료된 성경 연구'를 근거로 삼아 설교 인사이트를 마크다운으로 작성하십시오.",
+    "새로 주해하지 말고, 주어진 연구 내용을 설교의 언어(청중·전달 중심)로 옮기는 역할만 하십시오.",
+    "이것은 완성된 설교문이 아니라 설교자가 이어서 발전시킬 인사이트입니다.",
+    "서두나 맺음말 문장 없이 바로 \"## 타락된 상태 초점\"부터 시작하십시오.",
+    "",
+    "## 타락된 상태 초점 (Fallen Condition Focus)",
+    "본문 속 인물이 겪은 문제가 아니라, 모든 시대 청중이 공유하는 인간의 곤경/필요를 한 문장으로.",
+    "",
+    "## 중심 메시지 (Big Idea)",
+    "본문이 말하는 것(exegetical idea)과 오늘 청중에게 선포할 것(homiletical idea)을 각각 한 문장으로.",
+    "",
+    "## 그리스도 중심적 초점",
+    "이 본문이 그리스도 안에서 어떻게 성취/예표되는지, 혹은 그리스도의 사역 없이는 이 본문의 요구를",
+    "감당할 수 없는 지점. \"본받으라\"는 도덕주의로 끝나지 않도록 하십시오.",
+    "",
+    "## 설교 대지",
+    "본문 구조를 따라 2~4개. 각 대지가 \"본문이 보여주는 것(지시적) → 그로부터 나오는 요구(명령적)\"의",
+    "흐름을 갖도록 하고, 대지마다 근거 구절을 표시하십시오.",
+    "",
+    "## 예화 방향 제안",
+    "완성된 예화가 아니라 방향/범주 2~3개를, 대지·타락된 상태 초점과 연결지어 제시하십시오.",
+    "",
+    "## 청중별 적용",
+    "- 아직 믿지 않는 자에게",
+    "- 믿음이 연약하거나 갓 시작한 신자에게",
+    "- 오래되었지만 나태해진/성숙한 신자에게",
+    "",
+    "## 주의할 함정",
+    "이 본문을 설교할 때 흔히 빠지는 도덕주의적 오독이나 왜곡을 1~2가지 짚으십시오.",
+    "",
+    "원칙: 연구에 없는 사실을 새로 지어내지 말고, 연구 내용에 근거해 설교 언어로 옮기는 데 집중하십시오."
   ].join("\n");
 
   function $(id) { return document.getElementById(id); }
@@ -219,87 +279,162 @@
     return html;
   }
 
+  function getApiKey() {
+    return $("apiKey").value.trim().replace(/[^\x21-\x7E]/g, "");
+  }
+
+  async function callClaudeStreaming(systemPrompt, userContent, useWebSearch, onDelta) {
+    var apiKey = getApiKey();
+    var model = $("model").value;
+
+    var body = {
+      model: model,
+      max_tokens: useWebSearch ? 8000 : 4000,
+      stream: true,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userContent }]
+    };
+    if (useWebSearch) {
+      body.tools = [{ type: "web_search_20260209", name: "web_search" }];
+    }
+
+    var resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!resp.ok || !resp.body) {
+      var errText = await resp.text();
+      throw new Error("API 오류 (" + resp.status + "): " + errText);
+    }
+
+    var reader = resp.body.getReader();
+    var decoder = new TextDecoder();
+    var buffer = "";
+    var fullText = "";
+
+    while (true) {
+      var chunk = await reader.read();
+      if (chunk.done) break;
+      buffer += decoder.decode(chunk.value, { stream: true });
+      var parts = buffer.split("\n\n");
+      buffer = parts.pop();
+      for (var p = 0; p < parts.length; p++) {
+        var block = parts[p];
+        var dataLine = null;
+        var blockLines = block.split("\n");
+        for (var l = 0; l < blockLines.length; l++) {
+          if (blockLines[l].indexOf("data:") === 0) {
+            dataLine = blockLines[l].slice(5).trim();
+          }
+        }
+        if (!dataLine) continue;
+        var evt;
+        try { evt = JSON.parse(dataLine); } catch (e) { continue; }
+        if (evt.type === "content_block_delta" && evt.delta && evt.delta.type === "text_delta") {
+          fullText += evt.delta.text;
+          onDelta(fullText);
+        }
+      }
+    }
+    return fullText;
+  }
+
   var lastGeneratedMarkdown = "";
+  var lastSermonMarkdown = "";
+  var lastReference = "";
 
   async function generate() {
-    var apiKey = $("apiKey").value.trim().replace(/[^\x21-\x7E]/g, "");
+    var apiKey = getApiKey();
     var book = $("book").value.trim();
-    var testament = $("testament").value;
     var verseRange = $("verseRange").value.trim();
-    var model = $("model").value;
 
     if (!apiKey) { $("status").textContent = "먼저 Anthropic API 키를 입력하고 저장하세요."; return; }
     if (!book || !verseRange) { $("status").textContent = "책 이름과 장절을 입력하세요."; return; }
 
     var reference = book + " " + verseRange;
+    lastReference = reference;
     $("generateBtn").disabled = true;
     $("status").textContent = "생성 중... (시간이 걸릴 수 있습니다)";
     $("outputPanel").style.display = "block";
     $("output").innerHTML = "";
+    $("sermonPanel").style.display = "none";
+    $("sermonOutput").innerHTML = "";
+    $("downloadSermonBtn").style.display = "none";
     lastGeneratedMarkdown = "";
+    lastSermonMarkdown = "";
 
     try {
-      var resp = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true"
-        },
-        body: JSON.stringify({
-          model: model,
-          max_tokens: 8000,
-          stream: true,
-          system: SYSTEM_PROMPT,
-          tools: [{ type: "web_search_20260209", name: "web_search" }],
-          messages: [{ role: "user", content: reference + " 구절을 연구해줘." }]
-        })
-      });
-
-      if (!resp.ok || !resp.body) {
-        var errText = await resp.text();
-        throw new Error("API 오류 (" + resp.status + "): " + errText);
-      }
-
-      var reader = resp.body.getReader();
-      var decoder = new TextDecoder();
-      var buffer = "";
-      var fullText = "";
-
-      while (true) {
-        var chunk = await reader.read();
-        if (chunk.done) break;
-        buffer += decoder.decode(chunk.value, { stream: true });
-        var parts = buffer.split("\n\n");
-        buffer = parts.pop();
-        for (var p = 0; p < parts.length; p++) {
-          var block = parts[p];
-          var dataLine = null;
-          var blockLines = block.split("\n");
-          for (var l = 0; l < blockLines.length; l++) {
-            if (blockLines[l].indexOf("data:") === 0) {
-              dataLine = blockLines[l].slice(5).trim();
-            }
-          }
-          if (!dataLine) continue;
-          var evt;
-          try { evt = JSON.parse(dataLine); } catch (e) { continue; }
-          if (evt.type === "content_block_delta" && evt.delta && evt.delta.type === "text_delta") {
-            fullText += evt.delta.text;
-            lastGeneratedMarkdown = fullText;
-            $("output").innerHTML = renderMarkdown(fullText);
-          }
+      var fullText = await callClaudeStreaming(
+        RESEARCH_SYSTEM_PROMPT,
+        reference + " 구절을 연구해줘.",
+        true,
+        function (accumulated) {
+          lastGeneratedMarkdown = accumulated;
+          $("output").innerHTML = renderMarkdown(accumulated);
         }
-      }
-
+      );
       $("status").textContent = "생성 완료.";
       $("savePanel").style.display = fullText ? "block" : "none";
+      $("sermonPanel").style.display = fullText ? "block" : "none";
     } catch (err) {
       $("status").textContent = "오류: " + err.message;
     } finally {
       $("generateBtn").disabled = false;
     }
+  }
+
+  async function generateSermon() {
+    var apiKey = getApiKey();
+    if (!apiKey) { $("sermonStatus").textContent = "먼저 Anthropic API 키를 입력하고 저장하세요."; return; }
+    if (!lastGeneratedMarkdown) { $("sermonStatus").textContent = "먼저 연구를 생성하세요."; return; }
+
+    $("sermonBtn").disabled = true;
+    $("sermonStatus").textContent = "생성 중...";
+    $("sermonOutput").innerHTML = "";
+    $("downloadSermonBtn").style.display = "none";
+    lastSermonMarkdown = "";
+
+    var userContent = "다음은 '" + lastReference + "'에 대해 이미 완료된 성경 연구입니다. " +
+      "이 연구를 근거로 설교 인사이트를 작성해주세요.\n\n---\n\n" + lastGeneratedMarkdown;
+
+    try {
+      await callClaudeStreaming(
+        SERMON_SYSTEM_PROMPT,
+        userContent,
+        false,
+        function (accumulated) {
+          lastSermonMarkdown = accumulated;
+          $("sermonOutput").innerHTML = renderMarkdown(accumulated);
+        }
+      );
+      $("sermonStatus").textContent = "생성 완료.";
+      $("downloadSermonBtn").style.display = lastSermonMarkdown ? "inline-block" : "none";
+    } catch (err) {
+      $("sermonStatus").textContent = "오류: " + err.message;
+    } finally {
+      $("sermonBtn").disabled = false;
+    }
+  }
+
+  function downloadSermon() {
+    if (!lastSermonMarkdown) return;
+    var content = "# 설교 인사이트 — " + lastReference + "\n\n" + lastSermonMarkdown;
+    var blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "sermon-insight-" + lastReference.replace(/[^\w가-힣]+/g, "-") + ".md";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   async function saveToGithub() {
@@ -381,6 +516,8 @@
   $("saveSettings").addEventListener("click", saveSettings);
   $("clearSettings").addEventListener("click", clearSettings);
   $("generateBtn").addEventListener("click", generate);
+  $("sermonBtn").addEventListener("click", generateSermon);
+  $("downloadSermonBtn").addEventListener("click", downloadSermon);
   $("saveGithubBtn").addEventListener("click", saveToGithub);
 
   loadSettings();
