@@ -222,7 +222,7 @@
   var lastGeneratedMarkdown = "";
 
   async function generate() {
-    var apiKey = $("apiKey").value.trim();
+    var apiKey = $("apiKey").value.trim().replace(/[^\x21-\x7E]/g, "");
     var book = $("book").value.trim();
     var testament = $("testament").value;
     var verseRange = $("verseRange").value.trim();
@@ -303,7 +303,7 @@
   }
 
   async function saveToGithub() {
-    var token = $("ghToken").value.trim();
+    var token = $("ghToken").value.trim().replace(/[^\x21-\x7E]/g, "");
     var repo = $("ghRepo").value.trim();
     var book = $("book").value.trim();
     var testament = $("testament").value;
