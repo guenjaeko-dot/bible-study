@@ -1,6 +1,8 @@
 title: "개혁주의 성경연구"
 description: "개혁주의(Reformed) 신학 관점의 성경 연구 아카이브"
 lang: ko
+timezone: Asia/Seoul
+future: true
 markdown: kramdown
 kramdown:
   input: GFM
